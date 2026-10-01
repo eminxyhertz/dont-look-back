@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DON'T LOOK BACK — Nightmare Edition</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#020202;color:#ddd;font-family:ui-monospace,Consolas,monospace;display:flex;justify-content:center;min-height:100vh;padding:18px}
+.game{width:min(760px,100%);background:#050505;border:1px solid #252525;border-radius:14px;overflow:hidden}
+.top{display:flex;justify-content:space-between;gap:12px;padding:12px 15px;background:#090909;border-bottom:1px solid #222}
+.label{font-size:9px;letter-spacing:.16em;color:#666}.value{font-size:14px;color:#bbb}.meter{width:92px;height:4px;background:#222;margin-top:6px}.meter i{display:block;height:100%;width:100%;background:#888}
+.scene{position:relative;min-height:450px;overflow:hidden;background:#080808}
+.picture{position:absolute;inset:0;transition:filter .4s,opacity .4s}
+.room{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 35%,#242424 0,#101010 35%,#020202 80%)}
+.wallline{position:absolute;left:0;right:0;top:66%;height:1px;background:#272727}
+.door{position:absolute;width:112px;height:235px;left:50%;top:55px;transform:translateX(-50%);background:#030303;border:2px solid #303030;box-shadow:0 0 60px #000}
+.door:after{content:"";position:absolute;width:6px;height:6px;border-radius:50%;right:12px;top:120px;background:#777}
+.floor{position:absolute;left:0;right:0;bottom:0;height:155px;background:repeating-linear-gradient(90deg,#060606 0 50px,#101010 50px 51px);clip-path:polygon(17% 0,83% 0,100% 100%,0 100%)}
+.frame{position:absolute;left:13%;top:20%;width:80px;height:95px;border:5px solid #181818;background:#030303;box-shadow:0 0 15px #000}
+.frame:after{content:"";position:absolute;inset:9px;background:linear-gradient(135deg,#101010,#020202 55%,#222)}
+.bed{position:absolute;left:8%;bottom:24%;width:145px;height:55px;background:#111;border:1px solid #252525;transform:skewY(-3deg)}
+.bed:before{content:"";position:absolute;left:8px;top:-28px;width:105px;height:30px;background:#171717;border:1px solid #292929}
+.figure{position:absolute;z-index:2;width:39px;height:145px;left:50%;top:92px;transform:translateX(-50%);background:#000;border-radius:45% 45% 8% 8%;opacity:0;filter:blur(2px);transition:opacity .25s}
+.figure:before{content:"";position:absolute;width:46px;height:46px;border-radius:50%;left:-3px;top:-34px;background:#000}
+.figure:after{content:"•  •";position:absolute;color:#aaa;font-size:10px;left:6px;top:-19px;letter-spacing:6px}
+.shadow{position:absolute;z-index:2;left:47%;bottom:14%;width:90px;height:20px;background:#000;border-radius:50%;filter:blur(12px);opacity:0}
+.text{position:absolute;z-index:5;left:18px;right:18px;bottom:18px;background:rgba(0,0,0,.84);border-left:2px solid #555;padding:13px 15px;line-height:1.55;font-size:13px;min-height:67px}
+.actions{padding:13px 15px;background:#080808;border-top:1px solid #222;display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;font-size:11px;color:#ccc;background:#111;border:1px solid #333;border-radius:7px;padding:11px 13px;min-height:44px;cursor:pointer}
+button:hover{background:#191919;border-color:#777}button:focus-visible{outline:2px solid #aaa}
+button.bad{background:#180b0b;border-color:#542828}
+.overlay{position:absolute;z-index:20;inset:0;background:#000;display:flex;align-items:center;justify-content:center;text-align:center;padding:25px}
+.overlay h1{font-size:29px;letter-spacing:.12em;margin:0 0 12px}.overlay p{max-width:480px;color:#999;line-height:1.6;font-size:13px}
+.scare{position:absolute;z-index:50;inset:0;display:flex;align-items:center;justify-content:center;background:#000;opacity:0;pointer-events:none}
+.scare .face{width:190px;height:250px;position:relative;background:#050505;border-radius:48% 48% 45% 45%;box-shadow:0 0 70px #000}
+.scare .eye{position:absolute;top:78px;width:27px;height:12px;background:#ddd;border-radius:50%;box-shadow:0 0 12px #aaa}
+.scare .e1{left:43px}.scare .e2{right:43px}
+.scare .mouth{position:absolute;left:55px;right:55px;bottom:54px;height:78px;border-radius:10px 10px 45% 45%;background:#000;border:2px solid #333}
+.scare.flash{animation:flash .7s steps(2,end)}.scare.shake{animation:flash .45s steps(2,end)}
+@keyframes flash{0%{opacity:0;transform:scale(1)}12%{opacity:1;transform:scale(1.04)}28%{opacity:1;transform:scale(1)}45%{opacity:0}60%{opacity:1}100%{opacity:0}}
+@media(max-width:520px){.scene{min-height:430px}.text{font-size:12px}}
+.volume-control{display:flex;align-items:center;gap:5px;color:#aaa;font-size:12px}
+.volume-control input{width:80px;accent-color:#b30000}
+.sound-test{margin-left:8px;background:#151515;color:#ddd;border:1px solid #444;padding:9px 12px;border-radius:5px;cursor:pointer}
+.sound-test:hover{background:#242424}
+@media(max-width:600px){.top{font-size:11px}.volume-control input{width:65px}}
+''</style>
+</head>
+<body>
+<div class="game">
+<div class="top">
+<div><div class="label">Apartment</div><div class="value">6</div></div>
+<div><div class="label">Time</div><div class="value" id="clock">05:00</div></div>
+<div><div class="label">Fear</div><div class="meter"><i id="fear"></i></div></div>
+</div>
+<div class="scene" id="scene">
+<div class="picture room" id="picture">
+<div class="frame"></div><div class="bed"></div><div class="door"></div><div class="floor"></div>
+<div class="figure" id="figure"></div><div class="shadow" id="shadow"></div>
+</div>
+<div class="text" id="story">Three knocks come from inside your apartment.</div>
+<div class="overlay" id="overlay"><div><h1 id="endTitle">DON'T LOOK BACK</h1><p id="intro">You have five minutes until sunrise. Something is inside your apartment.</p><p><b>There is only one rule: never look behind you.</b></p><button id="begin">Begin</button></div></div>
+<div class="scare" id="scare"><div class="face"><div class="eye e1"></div><div class="eye e2"></div><div class="mouth"></div></div></div>
+</div>
+<div class="actions" id="actions"></div>
+</div>
+
+<script>
+/* ===== DON’T LOOK BACK — MOBILE-SAFE OFFLINE AUDIO ===== */
+let audioCtx = null;
+let masterGain = null;
+let soundReady = false;
+
+function startAudio() {
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0.60;
+      masterGain.connect(audioCtx.destination);
+    }
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    soundReady = true;
+    updateVolume();
+  } catch (e) {
+    soundReady = false;
+  }
+}
+
+function updateVolume() {
+  if (!masterGain) return;
+  const slider = document.getElementById("volume");
+  const value = slider ? Number(slider.value) : 65;
+  masterGain.gain.setTargetAtTime(value / 100 * 0.90, audioCtx.currentTime, 0.02);
+}
+
+function tone(type, frequency, duration, volume, endFrequency) {
+  if (!soundReady) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(frequency, now);
+  if (endFrequency) osc.frequency.exponentialRampToValueAtTime(Math.max(20,endFrequency), now+duration);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.linearRampToValueAtTime(volume, now+0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now+duration);
+  osc.connect(gain);
+  gain.connect(masterGain);
+  osc.start(now);
+  osc.stop(now+duration+0.03);
+}
+
+function noise(duration, volume, type, frequency, delay=0) {
+  if (!soundReady) return;
+  const now = audioCtx.currentTime + delay;
+  const length = Math.floor(audioCtx.sampleRate * duration);
+  const buffer = audioCtx.createBuffer(1, length, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i=0;i<length;i++) {
+    const fade = Math.min(1, i/(length*.04), (length-i)/(length*.14));
+    data[i] = (Math.random()*2-1)*fade;
+  }
+  const source = audioCtx.createBufferSource();
+  const filter = audioCtx.createBiquadFilter();
+  const gain = audioCtx.createGain();
+  source.buffer = buffer;
+  filter.type = type || "bandpass";
+  filter.frequency.value = frequency || 1000;
+  filter.Q.value = 1.5;
+  gain.gain.setValueAtTime(.0001, now);
+  gain.gain.linearRampToValueAtTime(volume, now+.02);
+  gain.gain.exponentialRampToValueAtTime(.0001, now+duration);
+  source.connect(filter); filter.connect(gain); gain.connect(masterGain);
+  source.start(now);
+}
+
+function breathing() {
+  if (!soundReady) return;
+  noise(.75,.07,"lowpass",500,0);
+  noise(.85,.08,"lowpass",430,.68);
+  tone("sine",65,.85,.018,42);
+}
+
+function whisper() {
+  noise(.45,.045,"bandpass",1900,0);
+  noise(.38,.035,"bandpass",2700,.20);
+}
+
+function knock() {
+  tone("triangle",100,.11,.16,48);
+  setTimeout(()=>tone("triangle",76,.12,.13,40),150);
+  setTimeout(()=>tone("triangle",92,.10,.14,42),320);
+}
+
+function footsteps() {
+  tone("triangle",65,.11,.09,38);
+  setTimeout(()=>tone("triangle",57,.10,.075,35),260);
+}
+
+function sting() {
+  tone("sawtooth",620,.28,.12,90);
+  tone("square",190,.40,.055,35);
+  noise(.30,.075,"highpass",1800,.03);
+}
+
+function bigScareSound() {
+  tone("sine",65,.80,.28,23);
+  tone("sawtooth",850,.42,.16,65);
+  noise(.48,.15,"highpass",2300,.01);
+  setTimeout(()=>sting(),70);
+  setTimeout(()=>tone("sine",48,.35,.15,30),230);
+}
+
+function testSound() {
+  startAudio();
+  if (!soundReady) return;
+  tone("sine",440,.22,.18,660);
+  setTimeout(()=>tone("sine",660,.22,.18,880),190);
+}
+
+/* ===== EXISTING GAME ===== */
+(()=> {
+const $=s=>document.querySelector(s);
+const story=$('#story'),actions=$('#actions'),clock=$('#clock'),fear=$('#fear'),figure=$('#figure'),shadow=$('#shadow'),overlay=$('#overlay'),endTitle=$('#endTitle'),intro=$('#intro'),begin=$('#begin'),scareLayer=$('#scare'),picture=$('#picture');
+let t=300,f=0,dead=false,interval,hasKey=false,power=false,started=false;
+
+function render(){clock.textContent=String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');fear.style.width=Math.max(0,100-f)+'%';figure.style.opacity=f>30?Math.min(.9,(f-30)/50):0}
+function text(x){story.textContent=x}
+function btn(list){actions.innerHTML='';list.forEach(([label,fn,bad])=>{const b=document.createElement('button');b.textContent=label;if(bad)b.className='bad';b.onclick=fn;actions.appendChild(b)})}
+function jumpscare(kind='face'){
+  if(dead)return;
+  scareLayer.classList.remove('flash','shake');void scareLayer.offsetWidth;
+  scareLayer.classList.add(kind==='hard'?'shake':'flash');
+  if(navigator.vibrate)try{navigator.vibrate([70,35,100])}catch(e){}
+}
+function die(title,msg){dead=true;clearInterval(interval);endTitle.textContent=title;intro.textContent=msg;begin.textContent='Restart';overlay.style.display='flex'}
+function scare(n,msg){f+=n;text(msg);render();if(f>=100){jumpscare('hard');setTimeout(()=>die('IT KNOWS','You tried to stay calm. You failed. The breathing is no longer behind you. It is inside your chest.'),450)}}
+function tick(){
+ if(dead)return;
+ t--;
+ if(t===275){text('Three knocks. Pause. Three knocks. Pause. Then one knock from directly behind you.')}
+ if(t===245){jumpscare();text('Something moved in the picture frame. When you look again, it is still.')}
+ if(t===210){text('The clock says 03:30. You are certain it said 04:02 a moment ago.')}
+ if(t===175){figure.style.opacity=.65;jumpscare();setTimeout(()=>{if(!dead)figure.style.opacity=f>30?.7:0},300);text('For less than a second, there was someone standing in front of the door.')}
+ if(t===135){text('A voice whispers: “You have done this before.”')}
+ if(t===95){picture.style.filter='brightness(.55) contrast(1.3)';text('The room looks different. You cannot remember owning that bed.')}
+ if(t===65){shadow.style.opacity=.8;jumpscare();text('The breathing suddenly stops. Something is standing behind you.')}
+ if(t<=0)die('SUNRISE','The window turns grey. You survived. Then your phone lights up with a photo of you sleeping. The photo was taken one minute ago.');
+ render();
+}
+function start(){dead=false;started=true;t=300;f=0;hasKey=false;power=false;picture.style.filter='';figure.style.opacity=0;shadow.style.opacity=0;overlay.style.display='none';text('Three knocks come from inside your apartment. You live alone.');btn([['Check the bedroom',bed],['Check the front door',door],['Stay completely still',still]]);clearInterval(interval);interval=setInterval(tick,1000);render()}
+function still(){scare(8,'You do not move. The breathing stops. Three seconds pass. Then something whispers your name from underneath the bed.');btn([['Look underneath',under],['Get up without looking',kitchen]])}
+function bed(){scare(12,'Your bedroom is empty. Your bed is made. You remember leaving it messy. On the pillow is a note: “STOP CHECKING.”');btn([['Read the note',note],['Leave the room',kitchen]])}
+function note(){scare(15,'The note changes while you read it. Now it says: “I SAW YOU CHOOSE THIS.”');btn([['Take the note',take],['Drop it',kitchen]])}
+function take(){scare(8,'The paper is warm. On the back is a crude drawing of this room. There is a black figure drawn directly behind you.');btn([['Get the keys',kitchen],['Turn around',turn]])}
+function under(){jumpscare('hard');setTimeout(()=>die('UNDER THE BED','There is nothing underneath. You exhale. Then two hands slowly grip the edge of the mattress from underneath.'),350)}
+function door(){scare(10,'You look through the peephole. The hallway is empty. Then a face appears against the glass from the OTHER SIDE of the peephole.');jumpscare();btn([['Step away',kitchen],['Open the door',open]])}
+function kitchen(){text('The kitchen is exactly as you remember it. Except the clock is missing. Your keys are on the counter. So is a second set of keys.');btn([['Take your keys',keys],['Take the other keys',wrongKeys]])}
+function keys(){hasKey=true;scare(5,'Your keys are freezing cold. The second set suddenly disappears. You hear footsteps upstairs. You do not have an upstairs.');btn([['Go to the basement',basement],['Return to the front door',front]])}
+function wrongKeys(){jumpscare('hard');setTimeout(()=>die('WRONG KEYS','The keys fit your front door. You open it. Your apartment is on the other side of the door. You can see yourself standing in the kitchen.'),400)}
+function open(){scare(18,'The door opens. The hallway is completely dark. Your neighbor’s door is open. Inside is another version of your apartment.');btn([['Enter the hallway',hall],['Close the door',front]])}
+function front(){if(!hasKey){text('You need your keys. Something behind you whispers: “You already picked them up.”');return}text('The front door is directly ahead. The breathing has stopped. The handle is slowly turning by itself.');btn([['Open it',open],['Go to the basement',basement]])}
+function basement(){if(!hasKey){text('The basement door is locked.');return}scare(7,'You descend into the basement. At the bottom is an electrical panel. Behind you, footsteps begin descending the stairs.');btn([['Turn off the power',breaker],['Hide behind the boiler',hide]])}
+function hide(){scare(20,'You hide. The footsteps stop. A shadow appears underneath the boiler. It has fingers. They slowly curl around the corner.');btn([['Stay hidden',stay],['Run upstairs',run]])}
+function stay(){jumpscare();scare(18,'You hear breathing directly beside your ear. A voice whispers: “Good choice.” You never chose anything.');btn([['Wait',wait],['Look behind you',turn]])}
+function wait(){t=Math.max(0,t-20);scare(12,'Nothing happens. Then you notice the basement has no stairs anymore. There is only a wall behind you.');btn([['Turn off the power',breaker]])}
+function breaker(){power=true;scare(10,'You pull the breaker. Everything goes black. For one second, the room is silent. Then the breaker clicks back ON by itself.');btn([['Pull it again',breaker2],['Leave',upstairs]])}
+function breaker2(){power=true;jumpscare();scare(20,'You pull it down again. This time it stays down. In the darkness, something laughs. Not behind you. From inside the electrical panel.');btn([['Run upstairs',upstairs]])}
+function run(){scare(25,'You sprint upstairs. The footsteps chase you. You reach the door. A hand grabs your shoulder.');btn([['Keep running',upstairs],['Turn around',turn]])}
+function upstairs(){text('You reach the apartment. Everything is dark. The front door is open. You can see the hallway outside.');btn([['Leave',escape],['Look into the apartment',look]])}
+function look(){jumpscare('hard');setTimeout(()=>die('IT WAS YOU','You look inside. Someone is sitting on your bed. It is you. It looks up and smiles. Your screen goes black for three seconds. When the image returns, it is standing behind you.'),450)}
+function escape(){if(!power)return die('NOT YET','You step outside. The hallway lights flicker on. Every apartment door is open. Every room contains someone standing perfectly still, facing you.');die('YOU MADE IT OUT','You step into the hallway. Your apartment door closes behind you. Three knocks come from inside it. Then your phone vibrates: “WHY DID YOU LEAVE ME IN THERE?”')}
+function hall(){jumpscare();setTimeout(()=>die('THE HALLWAY','You step into the darkness. Your apartment door closes behind you. From the other side: three knocks. Then your own voice says, “Let me out.”'),400)}
+function turn(){jumpscare('hard');setTimeout(()=>die('DON’T LOOK','You turn around. Nothing is there. You laugh nervously. Then you realize the game has stopped displaying your character. You are no longer playing from behind yourself. Something else is.'),450)}
+begin.onclick=start;render();
+})();
+
+/* Sound is started by a real user gesture — required by iOS/Safari. */
+document.addEventListener("DOMContentLoaded", () => {
+  const vol = document.getElementById("volume");
+  if (vol) vol.addEventListener("input", updateVolume);
+
+  const startButton =
+    document.getElementById("start") ||
+    document.querySelector("#overlay button") ||
+    document.querySelector("button");
+
+  if (startButton) {
+    startButton.addEventListener("click", () => {
+      startAudio();
+      // tiny confirmation sound when the game begins
+      tone("sine", 90, .16, .025, 55);
+    }, {capture:true});
+  }
+
+  const test = document.getElementById("soundTest");
+  if (test) test.addEventListener("click", (e) => {
+    e.stopPropagation();
+    testSound();
+  });
+});
+
+/* Any later game interaction can wake a suspended iOS audio context. */
+document.addEventListener("pointerdown", () => {
+  if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+}, {passive:true});
+
+</script>
+</body>
+</html>
